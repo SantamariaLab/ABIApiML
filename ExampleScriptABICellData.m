@@ -1,6 +1,8 @@
-% ExampleScriptABICellData.m
+%% ExampleScriptABICellData.m
 clc
-clf
+close all
+
+%% Basic access
 % This is the path where you are keeping the nwb files.
 myNwbPath = 'C:\Users\David\Dropbox\Documents\SantamariaLab\Projects\ABAtlas\ABIApiML';
 % This is the "ephys-result-id" of the session data file; it's also
@@ -11,13 +13,12 @@ ephysResultID = '324466856';
 % ephysResultID = '466245542';
 % ephysResultID = '325480370';
 
-% Construct an object that represents the session
+% Construct an object that represents the session/file
 acd = ABICellData(myNwbPath, ephysResultID);
 
-% Pull out some of the features of the session
+% Pull out some of the features (metadata) of the session
 [aibs_cre_line, aibs_dendrite_state, aibs_dendrite_type, ...
-                  aibs_specimen_id, aibs_specimen_name] ...
-                = acd.GetSpecimenInfo();
+ aibs_specimen_id, aibs_specimen_name] = acd.GetSpecimenInfo();
 [slices, session_id, protocol, pharmacology] = acd.GetCollectionInfo();
 [subject, species, genotype, age, sex] = acd.GetSubjectData();
 
@@ -25,7 +26,7 @@ acd = ABICellData(myNwbPath, ephysResultID);
 % acd.OpenSpecimenWebPage();
 
 % Get the version of nwb to which this file conforms 
-disp(acd.GetNWBVersion());
+nwbVersion = acd.GetNWBVersion();
 
 % Get lists of the sweeps in the acquisition, analysis, and stimulus
 % groups without going through an experiment.
@@ -33,58 +34,68 @@ sweepstrs1 = acd.GetAcquisitionSweepList();
 sweepstrs2 = acd.GetAnalysisSweepList();
 sweepstrs3 = acd.GetStimulusSweepList();
 
-% You can grab individual sweeps directly without going through an
-% experiment.
-% sweepnum = 13
-% sweep = acd.GetAcquisitionSweep(sweepnum);
-% sweep = acd.GetStimulusSweep(sweepnum);
-% sweep = acd.GetAnalysisSweep(sweepnum);
+% Grab individual sweeps directly without going through an experiment.
+% These give same sweep object but the sweepnum existence check checks the
+% specified group, so may differ in error condition
+sweepnum = 13;
+sweep = acd.GetAcquisitionSweep(sweepnum); %#ok<NASGU>
+sweep = acd.GetStimulusSweep(sweepnum); %#ok<NASGU>
+sweep = acd.GetAnalysisSweep(sweepnum); %#ok<NASGU>
 
 % Get a list of all the experiments in the cell
 expstrs = acd.GetExperimentList();
 
 % Get a struct that shows the stimulus waveform for each experiment
-expReport = acd.GetExpReport();
+expReport = acd.GetExperimentReport();
 
-%% 
-% Pick an experiment, then get the stimulus and response data for it and
-% plot them in a figure that is similar to that seen on the specimen
-% website
-experiment = 48;
+%% Experiment access
+% Pick an experiment, then get its metadata, its sweep and sweep metadata
+experiment = 40;
 myExp = acd.GetExperiment(experiment);
 expdescription = myExp.GetExperimentDescription();
-[starttime, stoptime] = myExp.GetExperimentTimes()
+[starttime, stoptime] = myExp.GetExperimentTimes();
 
 % The experiment's sweep object represents the stimulus,
 % acquisition/response, and analysis sweeps associated with that experiment
 sweep = myExp.GetExperimentSweep();
+str = sweep.GetSweepStr();
 
 % This tells you the times when the ABI analysis software detected spikes
 % in the experiment's response
 times = sweep.GetAnalysisSpikeTimes();
 numspikes = length(times);
 
-% You can grab data about the experiment's sweep like this
+% You can grab metadata about the experiment's sweep like this
 [amp_mv, amp_pa, description, interval, name] ...
                                             = sweep.GetAIBSStimulusInfo();
 [capfast, capslow, whcellcapcomp]           = sweep.GetCapacitances();
 [initAccess, compBW, compCorr, compPred, whCellSeriesComp] ...
                                             = sweep.GetResistances();
+[bias_current, bridge_balance, capacitance_compensation] ...
+                                            = sweep.GetElectronic();
 [electrode, gain, num_samples, seal, starting_time] ...
                                             = sweep.GetBasicInfo();
 
-% Plot the stimulus and response for our chosen experiment using the sweep
-% object grabbed above. Can compare this with that seen on the webpage for
-% this sweep; however the webpages x and y limits are not the same as presented
-% in the nwb file (but the figure's limits can be adjusted through the axis
-% property editor).
+%% Data Access and Plotting
+% Access the stimulus and response data for our chosen experiment using the
+% sweep object grabbed above, then plot them in a way that allows
+% comparison with that seen on the ABI webpage for this sweep; however the
+% webpages x and y limits are not the same as presented in the nwb file
+% (but the figure's limits can be adjusted through the axis property
+% editor).
 h = figure(1);
-
+hold off
+% Get the time base
 % The timebase is common for both stimulus and response in this experiment
 t = sweep.GetTimeBase();
+% Get the experiment time window and use it to restrict the plot
+[startIndex, endIndex] = myExp.GetTimeBaseWindow();
+
+% Plot the stimulus
 subplot(2,1,1)
 [data, conversion, ~, units] = sweep.GetStimulusData();
-plot(t, data/str2double(conversion))
+plot(t(startIndex:endIndex), data(startIndex:endIndex)/str2double(conversion));
+% Formulate a title from the metadata
 [~,~,~,~,stimName] = sweep.GetAIBSStimulusInfo(); 
 title(['Specimen ID: ' aibs_specimen_id ...
        '   Stimulus Data for ' sweep.GetSweepStr() ...
@@ -92,15 +103,16 @@ title(['Specimen ID: ' aibs_specimen_id ...
        'Interpreter', 'none');
 ylabel({[conversion '  ' units]});
 
+% Plot the Response
 subplot(2,1,2)
 [data, conversion, ~, units] = sweep.GetAcquisitionData();
-plot(t, data/str2double(conversion))
+plot(t(startIndex:endIndex), data(startIndex:endIndex)/str2double(conversion))
+% Formulate a title from the metadata
 title({['Specimen ID: ' aibs_specimen_id ...
         '   Acquisition Data for ' sweep.GetSweepStr() ...
         '   Number of spikes = ' num2str(numspikes)]}, ...
         'Interpreter', 'none');
 ylabel({[conversion '  ' units]});
-
 xlabel('Time (seconds)');
 
 % Make a little more room at the bottom of the figure

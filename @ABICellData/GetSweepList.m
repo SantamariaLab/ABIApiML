@@ -25,7 +25,6 @@ function sweepstrs = GetSweepList(obj, sweepparentlocation)
                 H5G.close(gid);
                 sweepstrs = [sweepstrs {num2str(i)}]; %#ok<AGROW>
             catch
-%                 disp([sweepparentlocation '/' sweepid ' rejected'] );
             end
         end
         if length(sweepstrs) >= numsweeps
@@ -33,5 +32,4 @@ function sweepstrs = GetSweepList(obj, sweepparentlocation)
         end
     end
     H5F.close(fid);
- 	disp(numsweeps);
 end

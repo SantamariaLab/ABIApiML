@@ -1,6 +1,6 @@
 %% ABICellData.m
-% A class that provides MATLAB access to the Allen Brain Institute data
-% inside a NWB formatted file.
+% A class that provides MATLAB access to the Allen Brain Institute Cell
+% Types electrophysiology data inside a NWB formatted file.
 classdef ABICellData < handle
     properties
         % Full absolute path/filename of NWB file
@@ -37,7 +37,8 @@ classdef ABICellData < handle
         function experiment = GetExperiment(obj, expnum)
             if ~obj.IsExperiment(expnum)
                  error(['Experiment ' num2str(expnum) ...
-                        ' is NOT available in this session (' obj.sessionID ').']);
+                        ' is NOT available in this session (ephysResultID=' ...
+                        obj.sessionID ').']);
             end
             experiment = ABIExperiment(obj.nwbFile, expnum);
         end
@@ -48,26 +49,28 @@ classdef ABICellData < handle
             tf = any(strcmpi(expstr, obj.experimentList));
         end
 
-        function expReport = GetExpReport(obj)
+        function expReport = GetExperimentReport(obj)
             for i = 1:length(obj.experimentList)
-                expnum = str2num(obj.experimentList{i});
+                expnum = str2num(obj.experimentList{i}); %#ok<ST2NM>
                 experiment = obj.GetExperiment(expnum);
-                expReport(i).ExpNum = experiment.GetExpNum();
+                expReport(i).ExpNum = experiment.GetExperimentNum(); %#ok<AGROW>
                 sweep = experiment.GetExperimentSweep();
                 [~,~,~,~,name] = sweep.GetAIBSStimulusInfo();
-                expReport(i).StimulusName = name;
+                expReport(i).StimulusName = name; %#ok<AGROW>
                 sweep.delete();
                 experiment.delete();
             end
         end
         
         %% Sweeps
+        % These are from the sweep view; for the experiment view, use the
+        % ABIExperiment GetExperimentSweep method.
         function sweep = GetAcquisitionSweep(obj, sweepnum)
             if ~obj.IsAcquisitionSweep(sweepnum)
                  error(['Acquisition sweep ' num2str(sweepnum) ...
                         ' is NOT available in this session (' obj.sessionID ').']);
             end
-            sweep = ABISweep(obj.nwbFile, sweepnum);
+            sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
         
         function sweep = GetStimulusSweep(obj, sweepnum)
@@ -75,7 +78,15 @@ classdef ABICellData < handle
                  error(['Stimulus sweep ' num2str(sweepnum) ...
                         ' is NOT available in this session (' obj.sessionID ').']);
             end
-            sweep = ABISweep(obj.nwbFile, sweepnum);
+            sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
+        end
+        
+        function sweep = GetAnalysisSweep(obj, sweepnum)
+            if ~obj.IsAnalysisSweep(sweepnum)
+                 error(['Analysis sweep ' num2str(sweepnum) ...
+                        ' is NOT available in this session (' obj.sessionID ').']);
+            end
+            sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
         
         
@@ -147,7 +158,6 @@ classdef ABICellData < handle
             sex = sexcell{1};
         end
         
-       
         %% Acquisition Data
         function list = GetAcquisitionSweepList(obj)
             list = obj.acquisitionSweepList;

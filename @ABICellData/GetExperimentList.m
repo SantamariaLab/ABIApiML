@@ -11,7 +11,6 @@ function expStrs = GetExperimentList(obj)
     fid = H5F.open(obj.nwbFile, 'H5F_ACC_RDONLY','H5P_DEFAULT');
     for i = 0:obj.MAX_EXPS
         expID = ['Experiment_' num2str(i)];
-        
         try  
             gid = H5G.open(fid, [expLocation '/' expID]);
             H5G.close(gid);
@@ -23,5 +22,4 @@ function expStrs = GetExperimentList(obj)
         end
     end
     H5F.close(fid);
- 	disp(length(expStrs));
 end

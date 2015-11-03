@@ -36,9 +36,6 @@
 classdef ABISweep < handle
     properties
         filepath;
-        acqlocation;
-        analocation;
-        stimlocation;
         sweepnum
         sweepstr;
         acqsweeploc;
@@ -48,20 +45,33 @@ classdef ABISweep < handle
         % The pdf says sampling rate is 200 KHz
         SAMPLING_RATE = 200000.0;
         SAMPLING_PERIOD = 1/200000.0;
+        
+        % If we are viewing this sweep as from an experiment, then this is
+        % true
+        fromExperiment;
     end
     
     methods
         %% Basic
-        function obj = ABISweep(filepath, sweepnum)
+        % expnum ignored unless fromExperiment is true
+        function obj = ABISweep(filepath, sweepnum, fromExperiment, expNum)
             obj.filepath = filepath;
-            obj.acqlocation = '/acquisition/timeseries';
-            obj.analocation = '/analysis/aibs_spike_times';
-            obj.stimlocation = '/stimulus/presentation';
+            if ~islogical(fromExperiment)
+                error(['ABISweep constructor: fromExperiment must be logical value']);
+            end
+            obj.fromExperiment = fromExperiment;
+            expStr = ['Experiment_' num2str(expNum)];
             obj.sweepnum = sweepnum;
             obj.sweepstr = ['Sweep_' num2str(sweepnum)];
-            obj.acqsweeploc = [obj.acqlocation '/' obj.sweepstr];
-            obj.anasweeploc = [obj.analocation '/' obj.sweepstr];
-            obj.stimsweeploc = [obj.stimlocation '/' obj.sweepstr];
+            if obj.fromExperiment
+                obj.acqsweeploc  = ['/epochs/' expStr '/response/timeseries'];
+                obj.anasweeploc  = ['/analysis/aibs_spike_times' '/' obj.sweepstr];
+                obj.stimsweeploc = ['/epochs/' expStr '/stimulus/timeseries'];
+            else
+                obj.acqsweeploc  = ['/acquisition/timeseries'    '/' obj.sweepstr];
+                obj.anasweeploc  = ['/analysis/aibs_spike_times' '/' obj.sweepstr];
+                obj.stimsweeploc = ['/stimulus/presentation'     '/' obj.sweepstr];
+            end
         end
         
         function num = GetSweepnum(obj)
@@ -82,8 +92,10 @@ classdef ABISweep < handle
 
         %% Features
         % GetAIBSStimulusInfo
+        % With no spec for the file format, we are looking for everything
+        % we have seen so far and not panicking if we don't find it
         function [amp_mv, amp_pa, des, int, name] = GetAIBSStimulusInfo(obj)
-            %
+            % 
             try
                 amp_mv = h5read(obj.filepath, ...
                                 [obj.acqsweeploc '/aibs_stimulus_amplitude_mv']);
@@ -252,6 +264,47 @@ classdef ABISweep < handle
             end
         end
         
+        
+        % GetElectronic
+        function [bias_current, bridge_balance, capacitance_compensation] = ...
+                GetElectronic(obj)
+            try
+                bias_current = h5read(obj.filepath, ...
+                       [obj.acqsweeploc '/bias_current']);
+            catch
+                try
+                    bias_current = h5read(obj.filepath, ...
+                       [obj.stimsweeploc '/bias_current']);
+                catch
+                    bias_current = NaN;
+                end
+            end
+            %
+            try
+                bridge_balance = h5read(obj.filepath, ...
+                       [obj.acqsweeploc '/bridge_balance']);
+            catch
+                try
+                    bridge_balance = h5read(obj.filepath, ...
+                       [obj.stimsweeploc '/bridge_balance']);
+                catch
+                    bridge_balance = NaN;
+                end
+            end
+            %
+            try
+                capacitance_compensation = h5read(obj.filepath, ...
+                       [obj.acqsweeploc '/capacitance_compensation']);
+            catch
+                try
+                    capacitance_compensation = h5read(obj.filepath, ...
+                       [obj.stimsweeploc '/capacitance_compensation']);
+                catch
+                    capacitance_compensation = NaN;
+                end
+            end
+        end
+
         % GetBasicInfo
         function [electrode, gain, num_samples, seal, starting_time] = ...
                 GetBasicInfo(obj)
@@ -384,7 +437,7 @@ classdef ABISweep < handle
         % GetAnalysisSpikeTimes
         function times = GetAnalysisSpikeTimes(obj)
             try
-                times = h5read(obj.filepath, [obj.analocation '/' obj.sweepstr]);        
+                times = h5read(obj.filepath, obj.anasweeploc);
             catch
                 times = [];
             end

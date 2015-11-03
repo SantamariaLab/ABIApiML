@@ -7,7 +7,6 @@ classdef ABIExperiment < handle
         expNum;
         expStr;
         expLocation;
-        sweep;
     end
         
     methods
@@ -19,11 +18,11 @@ classdef ABIExperiment < handle
             obj.expLocation = ['/epochs' '/' obj.expStr];
         end
         
-        function num = GetExpNum(obj)
+        function num = GetExperimentNum(obj)
             num = obj.expNum;
         end
         
-        function str = GetExpStr(obj)
+        function str = GetExperimentStr(obj)
             str = obj.expStr;
         end
         
@@ -37,8 +36,22 @@ classdef ABIExperiment < handle
             stoptime  = h5read(obj.filePath, [obj.expLocation '/stop_time']);
         end
         
+        % GetTimeBaseWindow
+        % stimulus and response appear to have same timebase so we just use
+        % stimulus 
+        function [startIndex, endIndex] = GetTimeBaseWindow(obj)
+            startIndex = h5read(obj.filePath, ...
+                                [obj.expLocation '/stimulus/idx_start']);
+            count      = h5read(obj.filePath, ...
+                                [obj.expLocation '/stimulus/count']);
+            endIndex = startIndex + count - 1;
+        end
+        
+        % GetExperimentSweep 
+        % Grabs this experiment's sweep using the experiment hdf5 path
+        % just in case it matters sometime
         function sweep = GetExperimentSweep(obj)
-            sweep = ABISweep(obj.filePath, obj.expNum);
+            sweep = ABISweep(obj.filePath, obj.expNum, true, obj.expNum);
         end
        
         function desc = GetStimulusDescription(obj)
