@@ -1,0 +1,12 @@
+Test1.m
+TestDataSets.m
+temp.m
+*.nwb
+*.asv
+*.aux
+*.bbl
+*.blg
+*.log
+*.pdf
+*.synctex.gz
+*.tex.bak

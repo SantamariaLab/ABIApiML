@@ -1,0 +1,160 @@
+\documentclass{article}
+\usepackage[]{natbib}
+
+% Removed pdftex option on 2-11-13
+% because of http://tex.stackexchange.com/questions/82153/option-clash-when-using-graphicx-and-tikz-packages
+\usepackage{color,graphicx}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsxtra}
+\usepackage{mathtools}
+\usepackage{textcomp} 
+\usepackage{paralist}				% Use inline lists; also provides compactenum and compactitem
+\usepackage{enumerate}
+
+\usepackage[pdftex, bookmarks=true, bookmarksopen=false, bookmarksdepth=3,  pdfpagemode=UseOutlines, pdfstartview=FitH, colorlinks=true, pdfstartpage=1, urlcolor=blue, citecolor=blue ]{hyperref}
+\usepackage[all]{hypcap} %jump to top of figure instead of caption, from http://en.wikibooks.org/wiki/LaTeX/Labels_and_Cross-referencing
+
+\usepackage{epstopdf}
+\usepackage{fullpage}
+
+\usepackage{subcaption}
+\captionsetup{format=hang,justification=justified}
+%\usepackage{subfigure}
+
+\usepackage{placeins}				% For \FloatBarrier
+\usepackage{flafter}					% Force floats to appear after definition
+\usepackage{framed}
+\usepackage{bookmark}
+\usepackage{verbatim}
+\usepackage{afterpage}
+\usepackage{pifont}
+
+
+\title{ABIApiML Manual}
+\author{David. B. Stockton}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+This document describes the ABIApiML package, which is used to process, in MATLAB only, downloaded nwb-format electrophysiology files from the Allen Brain Institute Cell Types Database.  This package does not access the website nor does it download files from the database.
+
+\section{Basic format of the files}
+\begin{sloppypar}
+The files are in Neurodata Without Borders (nwb) format, which itself is in the HDF5 format. Top--level groups include stimulus, acquisition, epochs, and specific metadata. Electrophysiology sweeps are organized by number and data are stored under different groups.  For example, a test sweep such as a smoke test sweep called `Sweep\_0' that is not associated with an experiment has its stimulus waveform stored under \textit{/stimulus/presentation/Sweep\_0/data} and the recorded response stored under \textit{/acquisition/timeseries/Sweep\_0/data}. 
+\end{sloppypar}
+
+\begin{sloppypar}
+Experiments are located under \textit{/epochs}.  Like Sweep\_0, Experiment\_10, say, will have its its stimulus waveform stored under \textit{/stimulus/presentation/Sweep\_0/data} and the recorded response stored under \textit{/acquisition/timeseries/Sweep\_0/data}, but in addition the consumer has access under the experiment itself.  So the stimulus is also located at \textit{/epochs/Experiment\_10/stimulus/timeseries/data}, and the response is also located at \textit{/epochs/Experiment\_10/response/timeseries/data}.
+\end{sloppypar}
+
+\begin{sloppypar}
+Analysis in the form of spike detection for sweeps that have spikes is located under \textit{/analysis/aibs\_spike\_times/Sweep\_X}.
+\end{sloppypar}
+
+Thus we see that the sweep number associates a stimulus waveform+metadata, acquisition-response waveform+metadata, and analysis spike time list with one another. Sweep numbers are not necessarily contiguous, although every stimulus sweep that is present has a corresponding acquisition-response sweep.  Analysis sweeps only exist for experiments that have a response sweep that shows spikes.  
+
+The data uses a standard sampling rate of 200 kHz according to the ABI documentation \citep{ABI2015a}.
+
+\section{Overview of this package}
+The ABIApiML package eliminates the need for the MATLAB user to deal with the HDF5 structure of the chosen nwb file.  It allows direct access to sweeps by sweep number and to experiments by experiment number.  The user's basic approach is to construct an object of the \textbf{APICellData} class that specifies the file in question, then use object methods to access the information in the file. The package also uses \textbf{ABIExperiment} and \textbf{ABISweep} classes to access the data in the file.   This package does not write to the file, but only reads from it.
+
+There is a system of id numbers in use in the ABI Cell Types database.  The electrophysiology page for the chosen cell shows the `specimen id'. For example, the webpage \url{http://celltypes.brain-map.org/mouse/experiment/electrophysiology/324466858} shows the electrophysiology page for the slice with specimen id `324466858'.  This page has a download link which downloads an nwb--format file called `324466856.nwb', which is not the same number; this is called the `ephys--result--id'\footnote{This seems to be generally true but may not be true for all entries in the database.}.  This package (ABIApiML) only works with the nwb file itself. However, the specimen id is stored in the nwb file, and we have provided two ABICellData class methods for the user to access it --- one method returns the number itself (GetSpecimenInfo()), and the other opens the ephys webpage for that specimen using the MATLAB settings for default browser (OpenSpecimenWebPage()).  In addition, the GetIdentifier() and GetCollectionInfo() methods return the ephys-result--id.
+
+Note that the current version of this package does not provide access to all data within the nwb file.  We encourage the user to use a viewer such as HDFView to access the file internals should there be any questions about the information provided or not provided by this package.
+
+\section{Workflow outline/highlights}
+
+\subsection{Workflow}
+\begin{enumerate}
+	\item Go to \url{http:\\celltypes.brain-map.org}, which is the web interface to the Allen Brain Initiative Cell Types database.
+	\item Pick a cell for your project using the tools available and click on it.  This brings the ephys block associated with that cell to the top of the column on the right hand side of the page.  Click on that block to go to the electrophysiology summary for that specimen.
+	\item Click on `download data' to download the nwb file, which contains the electrophysiology data associated with that specimen.
+	\item Bring up MATLAB and build a script similar to \textbf{ExampleScriptABICellData.m}.
+	\item Run the script to make use of the data found in the nwb file in MATLAB.
+\end{enumerate}
+
+\subsection{Highlights}
+Among the things you can do within a MATLAB script using ABIApiML are:
+\begin{itemize}
+	\item Construct an instance of the \textbf{ABISweep} class, if desired, to access directly any single sweep, including the test sweeps and experiment sweeps.
+	\begin{itemize}
+		\item Use methods in the \textbf{ABISweep} class such as GetBasicInfo() or GetStimulusData() to access data associated with the sweep.
+		\item Use the GetTimeBase() method to construct a time base for the sweep that is suitable for plotting and other analysis.  
+	\end{itemize}
+	\item Construct an instance of the \textbf{ABICellData} class to gain access to all experiment--associated data in the nwb file. In this context an experiment is basically a single stimulus--response pair, along with metadata.
+	\begin{itemize}
+		\item Use the GetExperimentList() method to get a list of all the experiments in the file.
+		\item Use the GetExpReport() method to get a list of all experiments in the file together with the short description of the stimulus waveform used in each experiment.
+		\item Use the GetAnalysisSweepList() method to get a list of the sweeps that have detected spikes.
+		\item Use the GetExperiment() method to construct an \textbf{ABIExperiment} object and access the information associated with a specific experiment.
+	\end{itemize}
+	\item Construct an \textbf{ABIExperiment} object to access the specific sweeps and metadata associated with the experiment.
+	\begin{itemize}
+		\item Use methods such as GetExperimentDescription() to access metadata associated with the experiment.
+		\item Use the GetExperimentSweep() method of the \textbf{ABIExperiment} class to get an \textbf{ABISweep} object that is specifically associated with that experiment. This object has access to both the stimulus and analysis/acquisition data associated with the experiment.
+	\end{itemize}
+\end{itemize}
+
+\section{List of user--accessible methods by class}
+\subsection{ABICellData}
+\begin{itemize}
+	\item ABICellData(path, ephysresultid) --- constructor
+	\item GetIdentifier()
+	\item GetNWBVersion()
+	\item GetSpecimenInfo() --- returns general info about the specimen, including specimenid
+	\item OpenSpecimenWebPage() --- opens the ABI webpage for the specimen represented by the nwb file and this instance of the ABICellData class
+	\item GetCollectionInfo() --- returns general info about this data collection
+	\item GetSubjectData() --- returns general info about the subject from whom this specimen was taken 
+	\item GetExperimentList() --- returns a list of the experiments represented in this file
+	\item GetExpReport() --- 
+	\item GetExperiment(expnum) --- returns an ABIExperiment object for the indicated experiment number 
+	\item IsExperiment(expnum)
+	\item GetAcquisitionSweepList() --- returns a list of sweeps in the acquisition group
+	\item GetStimulusSweepList() --- returns a list of sweeps in the stimulus group
+	\item GetAnalysisSweepList() --- returns a list of sweeps in the analysis group
+	\item GetAcquisitionSweep(sweepnum) --- returns an ABISweep object for the indicated sweep number in the acquisition group
+	\item GetStimulusSweep(sweepnum) --- returns an ABISweep object for the indicated sweep number in the stimulus group
+	\item IsAcquisitionSweep(sweepnum)
+	\item IsStimulusSweep(sweepnum)
+	\item IsAnalysisSweep(sweepnum)
+\end{itemize}
+
+\subsection{ABIExperiment}
+\begin{itemize}
+	\item ABIExperiment(filepath, expnum) --- constructor
+	\item GetExpNum()
+	\item GetExpStr()
+	\item GetExperimentDescription()
+	\item GetExperimentTimes()
+	\item GetExperimentSweep(expnum)  --- returns an ABISweep object for the sweep associated with this experiment object
+\end{itemize}
+
+\subsection{ABISweep}
+\begin{itemize}
+	\item ABISweep(filepath, sweepnum) --- constructor
+	\item GetSweepNum()
+	\item GetSweepStr()
+	\item GetBasicInfo()
+	\item GetSamplingRate()
+	\item GetSamplingPeriod()
+	\item GetAIBSStimulusInfo()
+	\item GetCapacitances()
+	\item GetResistances()
+	\item GetTimeBase() --- returns an array with the sampling time for each datapoint
+	\item GetStimulusData() --- returns an array with the data from the stimulus data associated with this sweep
+	\item GetAcquisitionData() --- returns an array with the data from the acquisition data associated with this sweep
+	\item GetAnalysisSpikeTimes() --- returns an array with the analysis--detected spike times associated with this sweep
+\end{itemize}
+
+%========================
+%\cleardoublepage
+\phantomsection
+\pdfbookmark[1]{References}{References}
+\bibliographystyle{spbasic} % spbasic
+{\footnotesize\bibliography{../../../../References/SantamariaLabRefs}}
+
+\end{document}
