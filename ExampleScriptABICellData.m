@@ -51,7 +51,7 @@ expReport = acd.GetExperimentReport();
 
 %% Experiment access
 % Pick an experiment, then get its metadata, its sweep and sweep metadata
-experiment = 37;
+experiment = 41;
 myExp = acd.GetExperiment(experiment);
 expdescription = myExp.GetExperimentDescription();
 [starttime, stoptime] = myExp.GetExperimentTimes();
@@ -80,10 +80,13 @@ numspikes = length(spiketimes);
 %% Data Access and Plotting
 % Access the stimulus and response data for our chosen experiment using the
 % sweep object grabbed above, then plot them in a way that allows
-% comparison with that seen on the ABI webpage for this sweep; however the
-% webpages x and y limits are not the same as presented in the nwb file
-% (but the figure's limits can be adjusted through the axis property
-% editor).
+% comparison with that seen on the ABI webpage for this sweep.  Note,
+% however, that 1)the webpages x and y limits are not the same as presented
+% in the nwb file (but the figure's limits can be adjusted through the axis
+% property editor), and 2) the occurrence times of the spikes as seen on
+% the plots do not agree. However, the ABIMpiML plot is correct because it
+% agrees with the spike times stored in the NWB file; the webpage plot is
+% incorrect as far as spike occurrence time goes.
 h = figure(1);
 hold off
 % Get the time base
@@ -118,12 +121,15 @@ xlabel('Time (seconds)');
 
 % Make a little more room at the bottom of the figure
 % (This kinda works but not the best, but no need to do any better)
-position = h.Position;
-position(2) = position(2)-position(4)*0.2;
-position(3) = position(3)*1.5;
-position(4) = position(4)*0.8;
-h.Position = position;
-hold on
-oposition = h.OuterPosition;
-oposition(4) = oposition(4) * 1.6;
-h.OuterPosition = oposition;
+% This notation only applies to later versions of MATLAB (2014b and later).
+if ~verLessThan('matlab','8.4')
+    position = h.Position;
+    position(2) = position(2)-position(4)*0.2;
+    position(3) = position(3)*1.5;
+    position(4) = position(4)*0.8;
+    h.Position = position;
+    hold on
+    oposition = h.OuterPosition;
+    oposition(4) = oposition(4) * 1.6;
+    h.OuterPosition = oposition;
+end
