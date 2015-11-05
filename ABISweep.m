@@ -368,9 +368,19 @@ classdef ABISweep < handle
         
         %% Data
         % GetTimeBase
-        function timeBase = GetTimeBase(obj)
+        % If tfUseStartTime is true, use the sweep's start time to start
+        % the time base.  If tfUseStartTime is false, use 0.0 to start the
+        % time base. Using 0.0 will match the spike times seen in the
+        % analysis group
+        function timeBase = GetTimeBase(obj,tfUseStartTime)
+            if ~islogical(tfUseStartTime)
+                error('GetTimeBase: tfUseStartTime must be logical');
+            end
             [~,~,numSamples,~,startTime] = obj.GetBasicInfo();
             samplingPeriod = obj.GetSamplingPeriod();
+            if ~tfUseStartTime
+                startTime = 0.0;
+            end
             timeBase = double(startTime):samplingPeriod:(double(startTime)+(double(numSamples)-1)*samplingPeriod);
             if length(timeBase) ~= numSamples
                 error('TimeBase error');

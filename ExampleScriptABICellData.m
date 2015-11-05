@@ -8,7 +8,8 @@ myNwbPath = 'C:\Users\David\Dropbox\Documents\SantamariaLab\Projects\ABAtlas\ABI
 % This is the "ephys-result-id" of the session data file; it's also
 % the name of the file downloaded from the ephys summary page for the cell
 % (minus the ".nwb").
-ephysResultID = '324466856';
+ephysResultID = '324256801';
+% ephysResultID = '324466856';
 % ephysResultID = '386970631';
 % ephysResultID = '466245542';
 % ephysResultID = '325480370';
@@ -50,7 +51,7 @@ expReport = acd.GetExperimentReport();
 
 %% Experiment access
 % Pick an experiment, then get its metadata, its sweep and sweep metadata
-experiment = 40;
+experiment = 37;
 myExp = acd.GetExperiment(experiment);
 expdescription = myExp.GetExperimentDescription();
 [starttime, stoptime] = myExp.GetExperimentTimes();
@@ -62,8 +63,8 @@ str = sweep.GetSweepStr();
 
 % This tells you the times when the ABI analysis software detected spikes
 % in the experiment's response
-times = sweep.GetAnalysisSpikeTimes();
-numspikes = length(times);
+spiketimes = sweep.GetAnalysisSpikeTimes()
+numspikes = length(spiketimes);
 
 % You can grab metadata about the experiment's sweep like this
 [amp_mv, amp_pa, description, interval, name] ...
@@ -87,7 +88,7 @@ h = figure(1);
 hold off
 % Get the time base
 % The timebase is common for both stimulus and response in this experiment
-t = sweep.GetTimeBase();
+t = sweep.GetTimeBase(false);
 % Get the experiment time window and use it to restrict the plot
 [startIndex, endIndex] = myExp.GetTimeBaseWindow();
 
