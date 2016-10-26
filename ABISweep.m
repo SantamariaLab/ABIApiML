@@ -201,8 +201,8 @@ classdef ABISweep < handle
         end
         
         % GetResistances
-        function [initAccess, compBW, compCorr, compPred, ...
-                  whCellSeriesComp] = GetResistances(obj)
+        function [initAccess, compBW, compCorr, ...
+                  compPred, whCellSeriesComp] = GetResistances(obj)
             try
                 initAccess = h5read(obj.filepath, ...
                                     [obj.acqsweeploc '/initial_access_resistance']);

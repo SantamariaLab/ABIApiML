@@ -7,6 +7,11 @@ classdef ABICellData < handle
         nwbFile; 
         
         sessionID;
+        specimenID;
+        
+        curlDir =...
+            ['C:/Users/David/Dropbox/Documents/SantamariaLab/Projects' ... 
+             '/ProjNeuroMan/CloudStuff/curl-7.46.0-win64-mingw/bin/'];
         
         % Assumed max sweeps in each phase of an experiment
         MAX_SWEEPS = 1000; 
@@ -17,7 +22,7 @@ classdef ABICellData < handle
         analysisSweepList;
         stimulusSweepList;
     end
-    
+        
     methods
         %% Constructor
         function obj = ABICellData(pathname, sessionid)
@@ -28,9 +33,18 @@ classdef ABICellData < handle
                 error(['File ' obj.nwbFile ' not found'])
             end
             obj.experimentList = obj.GetExperimentList();
-            obj.acquisitionSweepList = obj.GetSweepList('/acquisition/timeseries');
-            obj.analysisSweepList = obj.GetSweepList('/analysis/aibs_spike_times');
-            obj.stimulusSweepList = obj.GetSweepList('/stimulus/presentation');
+            obj.acquisitionSweepList = ...
+                            obj.GetSweepList('/acquisition/timeseries');
+            obj.analysisSweepList = ...
+                            obj.GetSweepList('/analysis/aibs_spike_times');
+            obj.stimulusSweepList = ...
+                            obj.GetSweepList('/stimulus/presentation');
+            obj.specimenID = num2str(h5read(obj.nwbFile, ...
+                                            '/general/aibs_specimen_id'));
+        end
+        
+        function id = getSpecimenID(obj)
+            id = obj.specimenID;
         end
         
         %% Experiments
@@ -68,7 +82,8 @@ classdef ABICellData < handle
         function sweep = GetAcquisitionSweep(obj, sweepnum)
             if ~obj.IsAcquisitionSweep(sweepnum)
                  error(['Acquisition sweep ' num2str(sweepnum) ...
-                        ' is NOT available in this session (' obj.sessionID ').']);
+                        ' is NOT available in this session (' ...
+                        obj.sessionID ').']);
             end
             sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
@@ -76,7 +91,8 @@ classdef ABICellData < handle
         function sweep = GetStimulusSweep(obj, sweepnum)
             if ~obj.IsStimulusSweep(sweepnum)
                  error(['Stimulus sweep ' num2str(sweepnum) ...
-                        ' is NOT available in this session (' obj.sessionID ').']);
+                        ' is NOT available in this session (' ...
+                        obj.sessionID ').']);
             end
             sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
@@ -84,7 +100,8 @@ classdef ABICellData < handle
         function sweep = GetAnalysisSweep(obj, sweepnum)
             if ~obj.IsAnalysisSweep(sweepnum)
                  error(['Analysis sweep ' num2str(sweepnum) ...
-                        ' is NOT available in this session (' obj.sessionID ').']);
+                        ' is NOT available in this session (' ...
+                        obj.sessionID ').']);
             end
             sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
@@ -109,30 +126,36 @@ classdef ABICellData < handle
         function [aibs_cre_line, aibs_dendrite_state, aibs_dendrite_type, ...
                   aibs_specimen_id, aibs_specimen_name] ...
                 = GetSpecimenInfo(obj)
-            aibs_cre_linecell = h5read(obj.nwbFile, '/general/aibs_cre_line');
+            aibs_cre_linecell = h5read(obj.nwbFile, ...
+                                                '/general/aibs_cre_line');
             aibs_cre_line = aibs_cre_linecell{1};
-            aibs_dendrite_statecell = h5read(obj.nwbFile, '/general/aibs_dendrite_state');
+            aibs_dendrite_statecell = h5read(obj.nwbFile, ...
+                                        '/general/aibs_dendrite_state');
             aibs_dendrite_state = aibs_dendrite_statecell{1};
-            aibs_dendrite_typecell = h5read(obj.nwbFile, '/general/aibs_dendrite_type');
+            aibs_dendrite_typecell = h5read(obj.nwbFile, ...
+                                        '/general/aibs_dendrite_type');
             aibs_dendrite_type = aibs_dendrite_typecell{1};
-            aibs_specimen_idnum = h5read(obj.nwbFile, '/general/aibs_specimen_id');
+            aibs_specimen_idnum = h5read(obj.nwbFile, ...
+                                            '/general/aibs_specimen_id');
             aibs_specimen_id = num2str(aibs_specimen_idnum);
-            aibs_specimen_namecell = h5read(obj.nwbFile, '/general/aibs_specimen_name');
+            aibs_specimen_namecell = h5read(obj.nwbFile, ...
+                                            '/general/aibs_specimen_name');
             aibs_specimen_name = aibs_specimen_namecell{1};
         end
         
         % Open the Specimen WebPage at the Allen Brain Institute Website
         function OpenSpecimenWebPage(obj)
-            aibs_specimen_idnum = h5read(obj.nwbFile, '/general/aibs_specimen_id');
+            aibs_specimen_idnum = h5read(obj.nwbFile, ...
+                                            '/general/aibs_specimen_id');
             aibs_specimen_id = num2str(aibs_specimen_idnum);
-            url = ['http://celltypes.brain-map.org/mouse/experiment/electrophysiology/'...
-                aibs_specimen_id];
+            url = ['http://celltypes.brain-map.org/' ...
+                   'mouse/experiment/electrophysiology/' aibs_specimen_id];
             web(url, '-browser');
         end
         
         % Collection info
-        function [slices, session_id, session_start_time, protocol, pharmacology] ...
-                = GetCollectionInfo(obj)
+        function [slices, session_id, session_start_time,...
+                        protocol, pharmacology] = GetCollectionInfo(obj)
             slicescell = h5read(obj.nwbFile, '/general/slices');
             slices = slicescell{1};
             session_start_time = h5read(obj.nwbFile, '/session_start_time');
@@ -194,9 +217,15 @@ classdef ABICellData < handle
             tf = any(strcmpi(sweepstr, obj.analysisSweepList));
         end
         
+    end 
+    
+    %% Computed Parameters
+    methods 
+        % defn in separate file
+        [cellData, success, answer] = getComputedParameters(obj)  
     end
     
-    methods(Access=protected)
+	methods(Access=protected)
         list = GetSweepList(obj,location)
     end
 end
