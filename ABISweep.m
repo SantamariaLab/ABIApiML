@@ -177,11 +177,11 @@ classdef ABISweep < handle
             %
             try
                 capslow = h5read(obj.filepath, ...
-                                 [obj.acqsweeploc '/capacitance_fast']);
+                                 [obj.acqsweeploc '/capacitance_slow']);
             catch
                 try
                     capslow = h5read(obj.filepath, ...
-                                 [obj.stimsweeploc '/capacitance_fast']);
+                                 [obj.stimsweeploc '/capacitance_slow']);
                 catch
                     capslow = NaN;
                 end
