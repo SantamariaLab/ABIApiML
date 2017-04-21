@@ -31,6 +31,8 @@ classdef ABIExperiment < handle
             desc = h5read(obj.filePath, [obj.expLocation '/description']);
         end
         
+        % Note: these are not time-within-sweep; they appear to be some
+        % sort of external time.
         function [starttime, stoptime] = GetExperimentTimes(obj)
             starttime = h5read(obj.filePath, [obj.expLocation '/start_time']);
             stoptime  = h5read(obj.filePath, [obj.expLocation '/stop_time']);
@@ -59,5 +61,8 @@ classdef ABIExperiment < handle
             [~,~,~,~,desc] = sweep.GetAIBSStimulusInfo();
             sweep.delete();
         end
+    end
+    methods
+        visualize(obj, SpecimenID, analysisStart, analysisDur)
     end
 end

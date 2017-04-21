@@ -10,3 +10,4 @@ temp.m
 *.pdf
 *.synctex.gz
 *.tex.bak
+*.xls*

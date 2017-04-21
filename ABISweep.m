@@ -6,7 +6,7 @@
 % appears in both acquisition and stimulus/presentation sections, its
 % value is the same in both; so here we report the value from the first
 % place in which we find the attribute.
-%% Sweep children discovered so far
+%% Sweep children discovered so far in the nwb files
 % ----------------------------------|
 % aibs_stimulus_amplitude_mv           
 % aibs_stimulus_amplitude_pa
@@ -65,11 +65,11 @@ classdef ABISweep < handle
             obj.sweepstr = ['Sweep_' num2str(sweepnum)];
             if obj.fromExperiment
                 obj.acqsweeploc  = ['/epochs/' expStr '/response/timeseries'];
-                obj.anasweeploc  = ['/analysis/aibs_spike_times' '/' obj.sweepstr];
+                obj.anasweeploc  = ['/analysis/spike_times' '/' obj.sweepstr];
                 obj.stimsweeploc = ['/epochs/' expStr '/stimulus/timeseries'];
             else
                 obj.acqsweeploc  = ['/acquisition/timeseries'    '/' obj.sweepstr];
-                obj.anasweeploc  = ['/analysis/aibs_spike_times' '/' obj.sweepstr];
+                obj.anasweeploc  = ['/analysis/spike_times' '/' obj.sweepstr];
                 obj.stimsweeploc = ['/stimulus/presentation'     '/' obj.sweepstr];
             end
         end
@@ -388,7 +388,8 @@ classdef ABISweep < handle
         end
         
         % GetAcquisitionData
-        function [data, conversion, resolution, units] = GetAcquisitionData(obj)
+        function [data, conversion, resolution, units] =...
+                GetAcquisitionData(obj)
             data = h5read(obj.filepath, [obj.acqsweeploc '/data']);
             try
                 conversion = ...

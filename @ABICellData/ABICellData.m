@@ -5,8 +5,6 @@ classdef ABICellData < handle
     properties
         % Full absolute path/filename of NWB file
         nwbFile; 
-        
-        sessionID;
         specimenID;
         
         curlDir =...
@@ -25,10 +23,8 @@ classdef ABICellData < handle
         
     methods
         %% Constructor
-        function obj = ABICellData(pathname, sessionid)
-            obj.sessionID = sessionid;
-            filename = [sessionid, '.nwb'];
-            obj.nwbFile = fullfile(pathname, filename);
+        function obj = ABICellData(fullPathname)
+            obj.nwbFile = fullPathname;
             if ~(exist(obj.nwbFile, 'file') == 2)
                 error(['File ' obj.nwbFile ' not found'])
             end
@@ -36,7 +32,7 @@ classdef ABICellData < handle
             obj.acquisitionSweepList = ...
                             obj.GetSweepList('/acquisition/timeseries');
             obj.analysisSweepList = ...
-                            obj.GetSweepList('/analysis/aibs_spike_times');
+                            obj.GetSweepList('/analysis/spike_times');
             obj.stimulusSweepList = ...
                             obj.GetSweepList('/stimulus/presentation');
             obj.specimenID = num2str(h5read(obj.nwbFile, ...
@@ -51,8 +47,7 @@ classdef ABICellData < handle
         function experiment = GetExperiment(obj, expnum)
             if ~obj.IsExperiment(expnum)
                  error(['Experiment ' num2str(expnum) ...
-                        ' is NOT available in this session (ephysResultID=' ...
-                        obj.sessionID ').']);
+                        ' is NOT available in this session.']);
             end
             experiment = ABIExperiment(obj.nwbFile, expnum);
         end
@@ -82,8 +77,7 @@ classdef ABICellData < handle
         function sweep = GetAcquisitionSweep(obj, sweepnum)
             if ~obj.IsAcquisitionSweep(sweepnum)
                  error(['Acquisition sweep ' num2str(sweepnum) ...
-                        ' is NOT available in this session (' ...
-                        obj.sessionID ').']);
+                        ' is NOT available in this session.']);
             end
             sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
@@ -91,8 +85,7 @@ classdef ABICellData < handle
         function sweep = GetStimulusSweep(obj, sweepnum)
             if ~obj.IsStimulusSweep(sweepnum)
                  error(['Stimulus sweep ' num2str(sweepnum) ...
-                        ' is NOT available in this session (' ...
-                        obj.sessionID ').']);
+                        ' is NOT available in this session.']);
             end
             sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
@@ -100,8 +93,7 @@ classdef ABICellData < handle
         function sweep = GetAnalysisSweep(obj, sweepnum)
             if ~obj.IsAnalysisSweep(sweepnum)
                  error(['Analysis sweep ' num2str(sweepnum) ...
-                        ' is NOT available in this session (' ...
-                        obj.sessionID ').']);
+                        ' is NOT available in this session.']);
             end
             sweep = ABISweep(obj.nwbFile, sweepnum, false, 0);
         end
@@ -123,24 +115,24 @@ classdef ABICellData < handle
         
         %% General Info
         % Specimen info
-        function [aibs_cre_line, aibs_dendrite_state, aibs_dendrite_type, ...
-                  aibs_specimen_id, aibs_specimen_name] ...
-                = GetSpecimenInfo(obj)
+        function [aibs_cre_line, aibs_dendrite_state, ...
+                  aibs_dendrite_type, aibs_specimen_id, ...
+                  aibs_specimen_name] = GetSpecimenInfo(obj)
             aibs_cre_linecell = h5read(obj.nwbFile, ...
                                                 '/general/aibs_cre_line');
-            aibs_cre_line = aibs_cre_linecell{1};
-            aibs_dendrite_statecell = h5read(obj.nwbFile, ...
-                                        '/general/aibs_dendrite_state');
-            aibs_dendrite_state = aibs_dendrite_statecell{1};
+            aibs_cre_line = aibs_cre_linecell; %{1}
+%             aibs_dendrite_statecell = h5read(obj.nwbFile, ...
+%                                         '/general/aibs_dendrite_state');
+            aibs_dendrite_state = '';%aibs_dendrite_statecell{1};
             aibs_dendrite_typecell = h5read(obj.nwbFile, ...
                                         '/general/aibs_dendrite_type');
-            aibs_dendrite_type = aibs_dendrite_typecell{1};
+            aibs_dendrite_type = aibs_dendrite_typecell; %{1};
             aibs_specimen_idnum = h5read(obj.nwbFile, ...
                                             '/general/aibs_specimen_id');
             aibs_specimen_id = num2str(aibs_specimen_idnum);
             aibs_specimen_namecell = h5read(obj.nwbFile, ...
                                             '/general/aibs_specimen_name');
-            aibs_specimen_name = aibs_specimen_namecell{1};
+            aibs_specimen_name = aibs_specimen_namecell;%{1};
         end
         
         % Open the Specimen WebPage at the Allen Brain Institute Website
@@ -156,29 +148,30 @@ classdef ABICellData < handle
         % Collection info
         function [slices, session_id, session_start_time,...
                         protocol, pharmacology] = GetCollectionInfo(obj)
-            slicescell = h5read(obj.nwbFile, '/general/slices');
-            slices = slicescell{1};
+%             slicescell = h5read(obj.nwbFile, '/general/slices');
+            slices = '';%slicescell{1};
             session_start_time = h5read(obj.nwbFile, '/session_start_time');
             session_idnum = h5read(obj.nwbFile, '/general/session_id');
             session_id = num2str(session_idnum);
             protocolcell = h5read(obj.nwbFile, '/general/protocol');
-            protocol = protocolcell{1};
+            protocol = protocolcell; %{1};
             pharmacologycell = h5read(obj.nwbFile, '/general/pharmacology');
-            pharmacology = pharmacologycell{1};
+            pharmacology = pharmacologycell; %{1};
         end
         
         % Subject info
-        function [subject, species, genotype, age, sex] = GetSubjectData(obj)
-            subjectcell = h5read(obj.nwbFile, '/general/subject');
-            subject = subjectcell{1};
-            speciescell = h5read(obj.nwbFile, '/general/species');
-            species = speciescell{1};
-            genotypecell = h5read(obj.nwbFile, '/general/genotype');
-            genotype = genotypecell{1};
-            agecell = h5read(obj.nwbFile, '/general/age');
-            age = agecell{1};
-            sexcell = h5read(obj.nwbFile, '/general/sex');
-            sex = sexcell{1};
+        function [subject, species, genotype, age, sex] = ...
+                                                    GetSubjectData(obj)
+%             subjectcell = h5read(obj.nwbFile, '/general/subject');
+            subject = '';%subjectcell{1};
+            speciescell = h5read(obj.nwbFile, '/general/subject/species');
+            species = speciescell;%{1};
+            genotypecell = h5read(obj.nwbFile, '/general/subject/genotype');
+            genotype = genotypecell;%{1};
+            agecell = h5read(obj.nwbFile, '/general/subject/age');
+            age = agecell;%{1};
+            sexcell = h5read(obj.nwbFile, '/general/subject/sex');
+            sex = sexcell;%{1};
         end
         
         %% Acquisition Data
