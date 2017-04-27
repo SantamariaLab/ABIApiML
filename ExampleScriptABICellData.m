@@ -6,7 +6,7 @@ clc
 %close all
 
 % A simple config file for paths
-config = ini2struct('configdbs.ini'); % Use your own; config.ini supplied
+config = ini2struct('dbsconfig.ini'); % Use your own; config.ini supplied
 
 % The full path of the cURL bin directory 
 cURLBinDir = config.cURL.cURLBinDir;
@@ -32,6 +32,16 @@ acd = ABICellData(fullfile(myNwbDir, 'cell_types', ...
                            ['specimen_' SpecimenID], ephysFilename), ...
                            cURLBinDir);
 
+% Unlike the remainder of the statements in this script, which access the
+% local NWB file as stated, this statement accesses the ABI website
+% directly using RMA access via cURL; returning cell features that were
+% computed by ABI from all sweeps available (see the ABI documentation for
+% details) 
+[cellData, success, answer] = acd.getComputedParameters();
+disp(['RMA access of ABI -- Cell average ISI: ', cellData.avg_isi])
+            
+
+% The statements below access the local NWB file.
 % Pull out some of the features (metadata) of the session
 [aibs_cre_line, aibs_dendrite_state, aibs_dendrite_type, ...
  aibs_specimen_id, aibs_specimen_name] = acd.GetSpecimenInfo();
@@ -43,8 +53,8 @@ disp(['Specimen: ' acd.getSpecimenID()])
 % You should be able to see the same waveform as plotted below by selecting
 % the proper stimulus type, then hovering over the proper sweep's colored
 % blob.
-acd.OpenSpecimenWebPage();
 disp(['Opening ABI web page for Specimen ' num2str(SpecimenID)])
+acd.OpenSpecimenWebPage();
 
 % Get the version of nwb to which this file conforms 
 nwbVersion = acd.GetNWBVersion();
@@ -59,6 +69,9 @@ sweepstrs3 = acd.GetStimulusSweepList();
 % These give same sweep object but the sweepnum existence check checks the
 % specified group, so may differ in error condition
 sweepnum = 13; % We choose any sweep
+% Since we are accessing the sweep directly, not through the experiment,
+% the sweep property fromExperiment will be set to false (the hdf locations
+% are different, although the data may not be)
 sweep = acd.GetAcquisitionSweep(sweepnum); %#ok<NASGU>
 sweep = acd.GetStimulusSweep(sweepnum); %#ok<NASGU>
 sweep = acd.GetAnalysisSweep(sweepnum); %#ok<NASGU>
@@ -69,7 +82,7 @@ availExps = join(expstrs, ', ');
 msg = sprintf('Available Experiments: %s', availExps{1});
 disp(msg);  %#ok<*DSPS>
 
-% Get a struct that shows the stimulus type for each experiment
+% Get a struct array that shows the stimulus type for each experiment
 expReport = acd.GetExperimentReport();
 
 %% Experiment access
@@ -85,8 +98,9 @@ disp(expdescription{1})
 
 % The experiment's sweep object represents the stimulus,
 % acquisition/response, and analysis sweeps associated with that experiment
+% The sweep's fromExperiment property will be set to true.
 sweep = myExp.GetExperimentSweep();
-str = sweep.GetSweepStr();
+str = sweep.GetSweepStr();  % The name of the sweep in the file
 
 % This method tells you the times when the ABI analysis software detected 
 % spikes in the experiment's response
@@ -100,7 +114,7 @@ disp(msg)
 
 
 % You can grab metadata about the experiment's sweep like this, if it's
-% available in the file
+% available in the file; the files are not consistent
 [amp_mv, amp_pa, description, interval, stimName] ...
                                             = sweep.GetAIBSStimulusInfo(); %#ok<*ASGLU>
 [capfast, capslow, whcellcapcomp]           = sweep.GetCapacitances();
@@ -126,3 +140,4 @@ analysisStart = 1.02;
 analysisDur = 2.0;
 myExp.visualize(SpecimenID, analysisStart, analysisDur)
 
+                       

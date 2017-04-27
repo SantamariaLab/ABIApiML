@@ -1,6 +1,6 @@
 % GetSweepList
 % Pulls in the numbers of all sweeps found in the given section and
-% returns them as strings in a cell array.
+% returns them as strings in a cell array.  For internal use only.
 function sweepstrs = GetSweepList(obj, sweepparentlocation)
     sweeps = h5info(obj.nwbFile, sweepparentlocation);
     % Sweeps are parented by two different types of HDF5 objects

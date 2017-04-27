@@ -18,6 +18,10 @@ classdef ABICellData < handle
         analysisSweepList;
         stimulusSweepList;
     end
+    
+    methods(Access=private)
+        list = GetSweepList(obj,location)
+    end
         
     methods
         %% Constructor
@@ -217,8 +221,5 @@ classdef ABICellData < handle
         [cellData, success, answer] = getComputedParameters(obj)  
     end
     
-	methods(Access=protected)
-        list = GetSweepList(obj,location)
-    end
 end
 
