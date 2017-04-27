@@ -7,9 +7,7 @@ classdef ABICellData < handle
         nwbFile; 
         specimenID;
         
-        curlDir =...
-            ['C:/Users/David/Dropbox/Documents/SantamariaLab/Projects' ... 
-             '/ProjNeuroMan/CloudStuff/curl-7.46.0-win64-mingw/bin/'];
+        curlDir = '';
         
         % Assumed max sweeps in each phase of an experiment
         MAX_SWEEPS = 1000; 
@@ -23,8 +21,9 @@ classdef ABICellData < handle
         
     methods
         %% Constructor
-        function obj = ABICellData(fullPathname)
-            obj.nwbFile = fullPathname;
+        function obj = ABICellData(fullNWBPathname, fullCurlBinDir)
+            obj.nwbFile = fullNWBPathname;
+            obj.curlDir = fullCurlBinDir;
             if ~(exist(obj.nwbFile, 'file') == 2)
                 error(['File ' obj.nwbFile ' not found'])
             end

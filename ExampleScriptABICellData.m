@@ -5,10 +5,18 @@
 clc
 %close all
 
+% A simple config file for paths
+config = ini2struct('configdbs.ini'); % Use your own; config.ini supplied
+
+% The full path of the cURL bin directory 
+cURLBinDir = config.cURL.cURLBinDir;
+
+% The path where you are keeping the nwb files (but see notes just below);
+% the below is set up for this pattern:
+% myNwbDir/cell_types/specimen_321707905/ephys.nwb  
+myNwbDir = config.ABI.cacheDir;
+
 %% Basic access
-% This is the path where you are keeping the nwb files.
-myNwbDir = ['C:\Users\David\Dropbox\Documents\SantamariaLab\'...
-            'Projects\Fractional\ABI-FLIF\Cache'];
 % Note that the "ephys-result-id" of the session data file, which is also
 % the name of the file downloaded from the ephys summary page for the cell
 % (minus the ".nwb"), is NOT the same as the aibs_specimen_id, which
@@ -21,7 +29,8 @@ ephysFilename = ['ephys.nwb'];
 
 % Construct an object that represents the session/file
 acd = ABICellData(fullfile(myNwbDir, 'cell_types', ...
-                           ['specimen_' SpecimenID], ephysFilename));
+                           ['specimen_' SpecimenID], ephysFilename), ...
+                           cURLBinDir);
 
 % Pull out some of the features (metadata) of the session
 [aibs_cre_line, aibs_dendrite_state, aibs_dendrite_type, ...
