@@ -7,7 +7,7 @@ temp.m
 *.bbl
 *.blg
 *.log
-*.pdf
+./*.pdf
 *.synctex.gz
 *.tex.bak
 *.xls*
